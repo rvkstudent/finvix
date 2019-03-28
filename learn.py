@@ -143,3 +143,19 @@ for elem in ohlc:
 canvas.pack()
 master.mainloop()
 
+
+
+def cluster2(hour, minute, period):
+
+    minute_time = hour*60 + minute - 600
+
+    period_hour = minute_time // period * period // 60
+
+    print(period_hour+10)
+
+    period_minute = minute_time // period * period - period_hour*60
+
+    print(period_minute)
+
+cluster2(23, 59, 1)
+
