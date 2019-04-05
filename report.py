@@ -51,7 +51,10 @@ def find_table(filenames, header, end_phrase, columns, type):
                 buy_qty = sheet.cell(i+ offset, column_index['Куплено']).value
                 sold_qty = sheet.cell(i+ offset, column_index['Продано']).value
                 price = sheet.cell(i+ offset, column_index['Цена сделки']).value
-                comis = sheet.cell(i+ offset, column_index['Комиссия']).value
+                if (type == "FUT"):
+                    comis = float(sheet.cell(i+ offset, column_index['Комиссия']).value) + float(sheet.cell(i+ offset, column_index['Комиссия2']).value)
+                if (type == "FUND"):
+                    comis = float(sheet.cell(i + offset, column_index['Комиссия']).value)
                 nkd = ''
                 if 'НКД' in column_index:
                     nkd = sheet.cell(i+ offset, column_index['НКД']).value
@@ -125,7 +128,7 @@ def find_table(filenames, header, end_phrase, columns, type):
 
                         sum_profit[sec_code] = sum_profit[sec_code] + (average_sell[sec_code] - price) * qty - comis * 2
                         short_position_volume[sec_code] = short_position_volume[sec_code] - qty * average_sell[sec_code]
-                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * qty, sum_profit[sec_code]))
+                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * qty, sum_profit[sec_code]))
                     else:
                         print("Шорт по облигации???")
 
@@ -143,8 +146,8 @@ def find_table(filenames, header, end_phrase, columns, type):
 
                     if (nkd == ''):
                         sum_profit[sec_code] = sum_profit[sec_code] + (average_sell[sec_code] - price) * sum_qty[sec_code] - comis * 2
-                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * sum_qty[sec_code],
-                                                                 sum_profit[sec_code]))
+                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * sum_qty[sec_code],
+                        #                                          sum_profit[sec_code]))
                     else:
                         pass
                     # print(
@@ -188,7 +191,7 @@ def find_table(filenames, header, end_phrase, columns, type):
                     if (nkd == ''):
                         sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code])*qty - comis*2
                         long_position_volume[sec_code] = long_position_volume[sec_code] - qty * average_buy[sec_code]
-                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code])*qty, sum_profit[sec_code]))
+                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code])*qty, sum_profit[sec_code]))
                     else:
                         sum_nkd[sec_code] = sum_nkd[sec_code] - nkd
                         sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code]) * qty * 10 - comis*2 #+ nkd
@@ -206,8 +209,8 @@ def find_table(filenames, header, end_phrase, columns, type):
                     if (nkd == ''):
                         sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code]) * sum_qty[
                             sec_code] - comis * 2
-                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code]) * sum_qty[
-                             sec_code], sum_profit[sec_code]))
+                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code]) * sum_qty[
+                        #      sec_code], sum_profit[sec_code]))
                     else:
                         print("Шорт по облигации?????")
 
@@ -229,8 +232,14 @@ def find_table(filenames, header, end_phrase, columns, type):
     for i in sum_profit:
         sum_profit[i] = int(sum_profit[i])
     print(sum_profit)
-    print(average_buy)
-    print(sum_qty)
+
+
+    
+    for i in sum_qty:
+
+        if (sum_qty[i] > 0):
+            print("{} количество {} ср. цена {} \n".format(i, sum_qty[i], average_buy[i] + average_sell[i]))
+
 
     total = 0
 
@@ -238,6 +247,8 @@ def find_table(filenames, header, end_phrase, columns, type):
         total = total + sum_profit[elem]
 
     print ("Total {}".format(total))
+
+
 
 end_phrase = "Итого - Комиссия Брокера"
 header = "Заключенные в отчетном периоде сделки"
