@@ -233,13 +233,7 @@ def find_table(filenames, header, end_phrase, columns, type):
         sum_profit[i] = int(sum_profit[i])
     print(sum_profit)
 
-
     
-    for i in sum_qty:
-
-        if (sum_qty[i] > 0):
-            print("{} количество {} ср. цена {} \n".format(i, sum_qty[i], average_buy[i] + average_sell[i]))
-
 
     total = 0
 
@@ -247,6 +241,13 @@ def find_table(filenames, header, end_phrase, columns, type):
         total = total + sum_profit[elem]
 
     print ("Total {}".format(total))
+
+    print("\nОткрытые позиции: \n")
+
+    for i in sum_qty:
+
+        if (sum_qty[i] > 0):
+            print("{} количество {} ср. цена {}".format(i, sum_qty[i], average_buy[i] + average_sell[i]))
 
 
 
