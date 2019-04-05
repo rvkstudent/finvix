@@ -72,6 +72,7 @@ def find_table(filenames, header, end_phrase, columns, type):
     long_position_volume = {}
     short_position_volume = {}
 
+    sum_nkd = {}
     sum_qty = {}
     average_buy = {}
     average_sell = {}
@@ -83,7 +84,7 @@ def find_table(filenames, header, end_phrase, columns, type):
 
         sec_code = trade['SEC_CODE']
         trade_type = trade['Направление сделки']
-        trade_num = trade['Номер сделки']
+        trade_num = int(trade['Номер сделки'])
         nkd = trade['НКД']
         qty = float(trade['Количество'])
 
@@ -96,6 +97,7 @@ def find_table(filenames, header, end_phrase, columns, type):
             average_buy[sec_code] = 0
             average_sell[sec_code] = 0
             sum_profit[sec_code] = 0
+            sum_nkd[sec_code] = 0
 
 
 
@@ -103,13 +105,16 @@ def find_table(filenames, header, end_phrase, columns, type):
 
             if long_position_volume[sec_code] >= 0 and short_position_volume[sec_code] == 0:
 
+                sum_qty[sec_code] = sum_qty[sec_code] + qty
+
                 if nkd == '':
                     long_position_volume[sec_code] = long_position_volume[sec_code] + qty * price
+                    average_buy[sec_code] = long_position_volume[sec_code] / sum_qty[sec_code]
                 else:
-                    long_position_volume[sec_code] = long_position_volume[sec_code] + nkd + 10*price*qty
+                    sum_nkd[sec_code] = sum_nkd[sec_code] + nkd
+                    long_position_volume[sec_code] = long_position_volume[sec_code] + 10*price*qty #+ nkd
+                    average_buy[sec_code] = long_position_volume[sec_code] / sum_qty[sec_code] / 10
 
-                sum_qty[sec_code] = sum_qty[sec_code] + qty
-                average_buy[sec_code] = long_position_volume[sec_code] / sum_qty[sec_code]
 
 
             if short_position_volume[sec_code] > 0:
@@ -117,14 +122,15 @@ def find_table(filenames, header, end_phrase, columns, type):
                 if qty <= sum_qty[sec_code]:
 
                     if (nkd == ''):
-                        sum_profit[sec_code] = sum_profit[sec_code] + (average_sell[sec_code] - price) * qty #- comis * 2
-                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * qty - comis * 2, sum_profit[sec_code]))
+
+                        sum_profit[sec_code] = sum_profit[sec_code] + (average_sell[sec_code] - price) * qty - comis * 2
+                        short_position_volume[sec_code] = short_position_volume[sec_code] - qty * average_sell[sec_code]
+                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * qty, sum_profit[sec_code]))
                     else:
-                        sum_profit[sec_code] = sum_profit[sec_code] + (nkd +  10 * price * qty)/qty - average_sell[sec_code] * qty - comis * 2
+                        print("Шорт по облигации???")
 
                     # print("Профит {} = {}, Итого = {}".format(sec_code, (average_sell[sec_code] - price) * qty - comis * 2, sum_profit[sec_code]))
 
-                    short_position_volume[sec_code] = short_position_volume[sec_code] - qty * average_sell[sec_code]
 
                     sum_qty[sec_code] = sum_qty[sec_code] - qty
 
@@ -136,12 +142,11 @@ def find_table(filenames, header, end_phrase, columns, type):
                 elif qty > sum_qty[sec_code]:
 
                     if (nkd == ''):
-                        sum_profit[sec_code] = sum_profit[sec_code] + (average_sell[sec_code] - price) * sum_qty[sec_code] # - comis * 2
-                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * sum_qty[sec_code] - comis * 2,
-                        #                                         sum_profit[sec_code]))
+                        sum_profit[sec_code] = sum_profit[sec_code] + (average_sell[sec_code] - price) * sum_qty[sec_code] - comis * 2
+                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (average_sell[sec_code] - price) * sum_qty[sec_code],
+                                                                 sum_profit[sec_code]))
                     else:
-                        sum_profit[sec_code] = sum_profit[sec_code] + ((nkd - (1000 - 1000 * price / 100) * sum_qty[sec_code] + sum_qty[sec_code] * 1000) / sum_qty[sec_code] - average_buy[sec_code]) * sum_qty[sec_code] - comis * 2
-
+                        pass
                     # print(
                     #     "Профит {} = {}, Итого = {}".format(sec_code, (average_sell[sec_code] - price) * sum_qty[sec_code] - comis * 2,
                     #                                       sum_profit[sec_code]))
@@ -151,10 +156,10 @@ def find_table(filenames, header, end_phrase, columns, type):
 
 
                     if nkd == '':
-                        long_position_volume[sec_code] = long_position_volume[sec_code] + sum_qty[sec_code] * price
+                        long_position_volume[sec_code] = long_position_volume[sec_code] + sum_qty[sec_code] * price - comis*2
                     else:
                         long_position_volume[sec_code] = long_position_volume[sec_code] + nkd - (
-                                    1000 - 1000 * price / 100) * sum_qty[sec_code] + sum_qty[sec_code] * 1000
+                                    1000 - 1000 * price / 100) * sum_qty[sec_code] + sum_qty[sec_code] * 1000 - comis*2
 
                     if sum_qty[sec_code] > 0:
                         average_buy[sec_code] = long_position_volume[sec_code] / sum_qty[sec_code]
@@ -169,63 +174,50 @@ def find_table(filenames, header, end_phrase, columns, type):
                 if nkd == '':
                     short_position_volume[sec_code] = short_position_volume[sec_code] + qty * price
                 else:
-                    short_position_volume[sec_code] = short_position_volume[sec_code] + nkd - (
-                                1000 - 1000 * price / 100) * qty + qty * 1000
-
-
+                    print ("Шорт по облигации?????")
 
                 sum_qty[sec_code] = sum_qty[sec_code] + qty
-
                 average_sell[sec_code] = short_position_volume[sec_code] / sum_qty[sec_code]
 
             if long_position_volume[sec_code] > 0:
 
                 if qty <= sum_qty[sec_code]:
 
-                    if (nkd == ''):
-                        sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code])*qty #- comis*2
-                        # print(
-                        #      "{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code])*qty - comis*2, sum_profit[sec_code]))
-                    else:
-                        sum_profit[sec_code] = sum_profit[sec_code] + (price * qty*10+nkd - average_buy[sec_code]*qty)  - comis * 2
-
-                        print("{} Профит {} = {}, Итого = {}".format(trade_num,sec_code, (price * qty*10+nkd - average_buy[sec_code]*qty)  - comis * 2,
-                                                       sum_profit[sec_code]))
-
-                    long_position_volume[sec_code] = long_position_volume[sec_code] - qty * average_buy[sec_code]
                     sum_qty[sec_code] = sum_qty[sec_code] - qty
 
-                    if sum_qty[sec_code] > 0:
-                        average_buy[sec_code] = long_position_volume[sec_code] / sum_qty[sec_code]
+                    if (nkd == ''):
+                        sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code])*qty - comis*2
+                        long_position_volume[sec_code] = long_position_volume[sec_code] - qty * average_buy[sec_code]
+                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code])*qty, sum_profit[sec_code]))
                     else:
-                        average_buy[sec_code] = 0
+                        sum_nkd[sec_code] = sum_nkd[sec_code] - nkd
+                        sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code]) * qty * 10 - comis*2 #+ nkd
+                        long_position_volume[sec_code] = long_position_volume[sec_code] - (qty * average_buy[sec_code] * 10)
+
+                    if sum_qty[sec_code] == 0:
+                        long_position_volume[sec_code] = 0
+                        sum_profit[sec_code] = -sum_nkd[sec_code] + sum_profit[sec_code]
 
 
                 elif qty > sum_qty[sec_code]:
 
-                    sum_qty[sec_code] = qty - sum_qty[sec_code]
+
 
                     if (nkd == ''):
                         sum_profit[sec_code] = sum_profit[sec_code] + (price - average_buy[sec_code]) * sum_qty[
-                            sec_code] #- comis * 2
-                        # print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code]) * sum_qty[
-                        #     sec_code] - comis * 2 , sum_profit[sec_code]))
+                            sec_code] - comis * 2
+                        print("{} Профит {} = {}, Итого = {}".format(trade_num, sec_code, (price - average_buy[sec_code]) * sum_qty[
+                             sec_code], sum_profit[sec_code]))
                     else:
-                        sum_profit[sec_code] = sum_profit[sec_code] + (
-                                (nkd - (1000 - 1000 * price / 100) * sum_qty[sec_code] + sum_qty[sec_code] * 1000) /
-                                sum_qty[sec_code] - average_buy[sec_code]) * sum_qty[sec_code] - comis * 2
+                        print("Шорт по облигации?????")
 
                     # print("Профит {} = {}, Итого = {}".format(sec_code, (
                     #             (nkd - (1000 - 1000 * price / 100) * sum_qty[sec_code] + sum_qty[sec_code] * 1000) /
                     #             sum_qty[sec_code] - average_buy[sec_code]) * sum_qty[sec_code] - comis * 2, sum_profit[sec_code]))
 
+                    sum_qty[sec_code] = qty - sum_qty[sec_code]
+                    short_position_volume[sec_code] = short_position_volume[sec_code] + sum_qty[sec_code] * price
                     long_position_volume[sec_code] = 0
-
-                    if nkd == '':
-                        short_position_volume[sec_code] = short_position_volume[sec_code] + sum_qty[sec_code] * price
-                    else:
-                        short_position_volume[sec_code] = short_position_volume[sec_code] + nkd - (
-                                1000 - 1000 * price / 100) * sum_qty[sec_code] + sum_qty[sec_code] * 1000
 
                     if sum_qty[sec_code] > 0:
                         average_sell[sec_code] = short_position_volume[sec_code] / sum_qty[sec_code]
@@ -233,6 +225,9 @@ def find_table(filenames, header, end_phrase, columns, type):
                         average_sell[sec_code] = 0
 
 
+    #print(sum_profit)
+    for i in sum_profit:
+        sum_profit[i] = int(sum_profit[i])
     print(sum_profit)
     print(average_buy)
     print(sum_qty)
@@ -243,8 +238,6 @@ def find_table(filenames, header, end_phrase, columns, type):
         total = total + sum_profit[elem]
 
     print ("Total {}".format(total))
-
-
 
 end_phrase = "Итого - Комиссия Брокера"
 header = "Заключенные в отчетном периоде сделки"
